@@ -25,7 +25,7 @@ class Criterion(object):
 class GoogleCriterion(object):
 
   def __init__(self):
-    self.counter = GoogleAjaxSearchCounter()
+    self.counter = GoogleSearchCounter()
 
   def pick(self, target, sources):
 
@@ -46,34 +46,27 @@ class GoogleHighestCriterion(GoogleCriterion):
     s = sorted(scores.iteritems(), key=operator.itemgetter(1), reverse=True)
     return s[0]      
 
-class GoogleAjaxSearchCounter(object):
+class GoogleLowestCriterion(GoogleCriterion):
 
-  url_base = 'http://ajax.googleapis.com/ajax/services/search/web?v=1.0&q='
-  referrer = 'http://www.decontextualize.com/'
+  def choose_best(self, scores):
+    import operator
+    s = sorted(scores.iteritems(), key=operator.itemgetter(1))
+    return s[0]      
+
+class GoogleSearchCounter(object):
 
   def __init__(self):
     self.cache = dict()
 
   def get_count(self, term):
-    import urllib2
-    import urllib
-    import json
-    from time import sleep
+    from xgoogle.search import GoogleSearch
 
     if term in self.cache:
       return self.cache[term]
 
-    url = self.url_base + urllib.quote(term)
-    print url
-    request = urllib2.Request(url, None, {'Referer': self.referrer})
-    response = urllib2.urlopen(request)
-
-    results = json.load(response)
-    print results
-    count = results['responseData']['cursor']['estimatedResultCount']
+    gs = GoogleSearch(term)
+    count = gs.num_results
     self.cache[term] = count
-
-    sleep(0.25)
 
     return count
 
@@ -83,7 +76,7 @@ if __name__ == '__main__':
   for card in ['friction', 'firefighters', 'george washington']:
     agent.deal(card)
 
-  card = agent.pick('temperamental', GoogleHighestCriterion())
+  card = agent.pick('temperamental', GoogleLowestCriterion())
 
   print card
 
